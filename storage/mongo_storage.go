@@ -84,7 +84,7 @@ func (m *mongoDAO) GetBestN(count int, level int) ([]types.UserScore, error) {
 			"_id":             0,
 		}},
 		{
-			"$limit": 2,
+			"$limit": count,
 		}}
 
 	cursor, err := m.l.Aggregate(context.Background(), config)
