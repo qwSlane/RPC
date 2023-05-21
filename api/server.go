@@ -50,14 +50,14 @@ func (s *Server) establishConnection(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("Websocket connection established from %s\n", conn.RemoteAddr().String())
 
-	go websocketConnection(conn)
+	go s.websocketConnection(conn)
 }
 
-func websocketConnection(conn *websocket.Conn) {
+func (s *Server) websocketConnection(conn *websocket.Conn) {
 	defer conn.Close()
 
 	id := 0
-	rpcHandler := &Handler{}
+	rpcHandler := NewRPCHandler(s.Storage)
 
 	for {
 		var request types.RpcRequest
@@ -68,16 +68,19 @@ func websocketConnection(conn *websocket.Conn) {
 
 		argsValue := make([]reflect.Value, len(request.Args))
 		for i, arg := range request.Args {
+
 			argsValue[i] = reflect.ValueOf(arg)
 		}
-		result := reflect.ValueOf(rpcHandler).MethodByName(request.Method).Call(argsValue)
-		if result != nil {
-			response := types.RpcResponse{Result: result[0].Interface(), Error: "", Id: request.Id}
 
-			if err := conn.WriteJSON(response); err != nil {
-				log.Println("error writing JSON-RPC response:", err)
-				return
-			}
+		result := reflect.ValueOf(rpcHandler).MethodByName(request.Method).Call(argsValue)
+
+		response := result[0].Interface()
+		log.Println(response)
+
+		err := conn.WriteJSON(response)
+		if err != nil {
+			log.Println("error writing JSON-RPC response:", err)
+			return
 		}
 
 		id++

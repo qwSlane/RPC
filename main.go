@@ -15,7 +15,8 @@ func main() {
 		return
 	}
 
-	server := api.NewServer(":8080", dao, nil)
+	middleware := api.NewAuthMiddleware(dao)
+	server := api.NewServer(":8080", dao, middleware)
 
 	server.Start()
 
