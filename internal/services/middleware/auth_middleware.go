@@ -1,12 +1,12 @@
-package api
+package middleware
 
 import (
 	"encoding/json"
 	"errors"
 	"log"
-	"main/storage"
-	"main/types"
 	"net/http"
+	"rpc/internal/database"
+	"rpc/internal/models/deprecated"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -26,7 +26,7 @@ func NewAuthMiddleware(storage storage.Storage) *AuthMiddleware {
 	}
 }
 
-func (s *AuthMiddleware) isAuthenticated(r *http.Request) bool {
+func (s *AuthMiddleware) IsAuthenticated(r *http.Request) bool {
 
 	tokenString := r.Header.Get("Authorization")
 
@@ -66,9 +66,9 @@ func (s *AuthMiddleware) isAuthenticated(r *http.Request) bool {
 	return false
 }
 
-func (s *AuthMiddleware) handleLogin(w http.ResponseWriter, r *http.Request) {
+func (s *AuthMiddleware) HandleLogin(w http.ResponseWriter, r *http.Request) {
 
-	var user types.User
+	var user deprecated.User
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
@@ -93,9 +93,9 @@ func (s *AuthMiddleware) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (s *AuthMiddleware) handleRegister(w http.ResponseWriter, r *http.Request) {
+func (s *AuthMiddleware) HandleRegister(w http.ResponseWriter, r *http.Request) {
 
-	var user types.User
+	var user deprecated.User
 
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
@@ -121,7 +121,7 @@ func (s *AuthMiddleware) handleRegister(w http.ResponseWriter, r *http.Request) 
 
 }
 
-func generateToken(user types.User) (string, error) {
+func generateToken(user deprecated.User) (string, error) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"username": user.Username,

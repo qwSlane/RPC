@@ -1,11 +1,13 @@
-package api
+package app
 
 import (
 	"log"
-	"main/storage"
-	"main/types"
 	"net/http"
 	"reflect"
+	"rpc/internal/database"
+	"rpc/internal/services/middleware"
+	"rpc/internal/transport"
+	"rpc/types"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
@@ -14,10 +16,10 @@ import (
 type Server struct {
 	Port       string
 	Storage    storage.Storage
-	Middleware Middleware
+	Middleware middleware.Middleware
 }
 
-func NewServer(port string, storage storage.Storage, middleware Middleware) *Server {
+func NewServer(port string, storage storage.Storage, middleware middleware.Middleware) *Server {
 	return &Server{
 		Port:       port,
 		Storage:    storage,
@@ -29,8 +31,8 @@ func (s *Server) Start() error {
 
 	r := mux.NewRouter()
 
-	r.HandleFunc("/login", s.Middleware.handleLogin).Methods("POST")
-	r.HandleFunc("/register", s.Middleware.handleRegister).Methods("POST")
+	r.HandleFunc("/login", s.Middleware.HandleLogin).Methods("POST")
+	r.HandleFunc("/register", s.Middleware.HandleRegister).Methods("POST")
 	r.HandleFunc("/ws", s.establishConnection)
 
 	log.Printf("Starting server on %v", s.Port)
@@ -38,7 +40,7 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) establishConnection(w http.ResponseWriter, r *http.Request) {
-	if !s.Middleware.isAuthenticated(r) {
+	if !s.Middleware.IsAuthenticated(r) {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -57,7 +59,7 @@ func (s *Server) websocketConnection(conn *websocket.Conn) {
 	defer conn.Close()
 
 	id := 0
-	rpcHandler := NewRPCHandler(s.Storage)
+	rpcHandler := transport.NewRPCHandler(s.Storage)
 
 	for {
 		var request types.RpcRequest

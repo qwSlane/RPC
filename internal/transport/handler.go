@@ -1,9 +1,9 @@
-package api
+package transport
 
 import (
 	"log"
-	"main/storage"
-	"main/types"
+	"rpc/internal/database"
+	"rpc/types"
 )
 
 type RPCHandler struct {

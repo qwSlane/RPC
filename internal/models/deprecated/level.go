@@ -1,4 +1,4 @@
-package types
+package deprecated
 
 type Level struct {
 	Level  int         `bson:"level"`

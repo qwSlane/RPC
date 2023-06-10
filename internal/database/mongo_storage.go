@@ -2,12 +2,11 @@ package storage
 
 import (
 	"context"
-	"main/types"
-
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"rpc/internal/models/deprecated"
 )
 
 const (
@@ -17,12 +16,12 @@ const (
 	URL                = "mongodb://127.0.0.1:27017"
 )
 
-type mongoDAO struct {
+type MongoDAO struct {
 	u *mongo.Collection
 	l *mongo.Collection
 }
 
-func NewMongoDao(ctx context.Context) (*mongoDAO, error) {
+func NewMongoDao(ctx context.Context) (*MongoDAO, error) {
 
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(URL))
 	if err != nil {
@@ -34,17 +33,17 @@ func NewMongoDao(ctx context.Context) (*mongoDAO, error) {
 		return nil, err
 	}
 
-	return &mongoDAO{
+	return &MongoDAO{
 		u: client.Database(dbName).Collection(dbUsersCollection),
 		l: client.Database(dbName).Collection(dbLevelsCollection),
 	}, nil
 }
 
-func (m *mongoDAO) SetNewRecord(level int, username string, score int) error {
+func (m *MongoDAO) SetNewRecord(level int, username string, score int) error {
 
 	filter := bson.M{"Level": level}
 
-	userScore := types.UserScore{
+	userScore := deprecated.UserScore{
 		Username: username,
 		Score:    score,
 	}
@@ -61,7 +60,7 @@ func (m *mongoDAO) SetNewRecord(level int, username string, score int) error {
 	return nil
 }
 
-func (m *mongoDAO) GetBestN(count int, level int) ([]types.UserScore, error) {
+func (m *MongoDAO) GetBestN(count int, level int) ([]deprecated.UserScore, error) {
 
 	config := []bson.M{
 		{
@@ -92,7 +91,7 @@ func (m *mongoDAO) GetBestN(count int, level int) ([]types.UserScore, error) {
 		return nil, err
 	}
 
-	var results []types.UserScore
+	var results []deprecated.UserScore
 
 	for cursor.Next(context.Background()) {
 		var document bson.M
@@ -100,7 +99,7 @@ func (m *mongoDAO) GetBestN(count int, level int) ([]types.UserScore, error) {
 			return nil, err
 		}
 
-		var userScore types.UserScore
+		var userScore deprecated.UserScore
 		scoreMap := document["Scores"].(primitive.M)
 
 		userScore.Username = scoreMap["username"].(string)
@@ -112,22 +111,22 @@ func (m *mongoDAO) GetBestN(count int, level int) ([]types.UserScore, error) {
 	return results, nil
 }
 
-func (m *mongoDAO) GetUser(key string) *types.User {
+func (m *MongoDAO) GetUser(key string) *deprecated.User {
 	filer := bson.M{"username": key}
-	var user types.User
+	var user deprecated.User
 	err := m.u.FindOne(context.Background(), filer).Decode(&user)
 	if err != nil {
 		return nil
 	}
 
-	return &types.User{
+	return &deprecated.User{
 		Username: user.Username,
 		Password: user.Password,
 	}
 }
-func (m *mongoDAO) CreateUser(username string, password string) error {
+func (m *MongoDAO) CreateUser(username string, password string) error {
 
-	user := types.User{Username: username, Password: password}
+	user := deprecated.User{Username: username, Password: password}
 
 	userDoc, err := bson.Marshal(user)
 	if err != nil {
@@ -141,17 +140,17 @@ func (m *mongoDAO) CreateUser(username string, password string) error {
 	return nil
 }
 
-func (m *mongoDAO) CheckUser(username string, password string) *types.User {
+func (m *MongoDAO) CheckUser(username string, password string) *deprecated.User {
 
 	filer := bson.M{"username": username,
 		"password": password}
-	var user types.User
+	var user deprecated.User
 	err := m.u.FindOne(context.Background(), filer).Decode(&user)
 	if err != nil {
 		return nil
 	}
 
-	return &types.User{
+	return &deprecated.User{
 		Username: user.Username,
 		Password: user.Password,
 	}

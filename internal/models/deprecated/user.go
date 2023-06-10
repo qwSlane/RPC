@@ -1,4 +1,4 @@
-package types
+package deprecated
 
 type User struct {
 	Username string `json:"username" bson:"username"`
