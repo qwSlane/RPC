@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package records;
+
+option go_package = "/types";
+
+message Record{
+  int32 Level = 1;
+  string username = 2;
+  int32 Score = 3;
+}

@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package transport;
+
+option go_package = "../types";
+
+import "google/protobuf/any.proto";
+
+message Response{
+  google.protobuf.Any Result = 1;
+  string Error = 2;
+}
