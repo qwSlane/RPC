@@ -6,6 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"rpc/internal/models"
 	"rpc/internal/models/deprecated"
 )
 
@@ -39,13 +40,13 @@ func NewMongoDao(ctx context.Context) (*MongoDAO, error) {
 	}, nil
 }
 
-func (m *MongoDAO) SetNewRecord(level int, username string, score int) error {
+func (m *MongoDAO) SetNewRecord(level int32, username string, score int32) error {
 
 	filter := bson.M{"Level": level}
 
 	userScore := deprecated.UserScore{
 		Username: username,
-		Score:    score,
+		Score:    int(score),
 	}
 
 	update := bson.M{"$push": bson.M{"Scores": userScore}}
@@ -60,7 +61,7 @@ func (m *MongoDAO) SetNewRecord(level int, username string, score int) error {
 	return nil
 }
 
-func (m *MongoDAO) GetBestN(count int, level int) ([]deprecated.UserScore, error) {
+func (m *MongoDAO) GetBestN(count int, level int) ([]*models.UserScore, error) {
 
 	config := []bson.M{
 		{
@@ -91,7 +92,7 @@ func (m *MongoDAO) GetBestN(count int, level int) ([]deprecated.UserScore, error
 		return nil, err
 	}
 
-	var results []deprecated.UserScore
+	var results []*models.UserScore
 
 	for cursor.Next(context.Background()) {
 		var document bson.M
@@ -99,11 +100,11 @@ func (m *MongoDAO) GetBestN(count int, level int) ([]deprecated.UserScore, error
 			return nil, err
 		}
 
-		var userScore deprecated.UserScore
+		var userScore *models.UserScore
 		scoreMap := document["Scores"].(primitive.M)
 
 		userScore.Username = scoreMap["username"].(string)
-		userScore.Score = int(scoreMap["score"].(int32))
+		userScore.Score = scoreMap["score"].(int32)
 
 		results = append(results, userScore)
 	}

@@ -1,4 +1,4 @@
-package types
+package proto_types
 
 type RpcRequest struct {
 	Method string        `json:"method"`

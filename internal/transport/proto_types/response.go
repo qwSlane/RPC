@@ -1,4 +1,4 @@
-package types
+package proto_types
 
 type RpcResponse struct {
 	Result interface{} `json:"result"`

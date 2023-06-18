@@ -1,29 +1,32 @@
 package app
 
 import (
+	"github.com/gorilla/mux"
+	"github.com/gorilla/websocket"
+	"google.golang.org/protobuf/proto"
 	"log"
 	"net/http"
-	"reflect"
 	"rpc/internal/database"
 	"rpc/internal/services/middleware"
 	"rpc/internal/transport"
-	"rpc/types"
-
-	"github.com/gorilla/mux"
-	"github.com/gorilla/websocket"
+	"rpc/internal/transport/types"
 )
 
 type Server struct {
-	Port       string
-	Storage    storage.Storage
-	Middleware middleware.Middleware
+	Port           string
+	ServiceManager *transport.ServiceManager
+	Storage        storage.Storage
+	Middleware     middleware.Middleware
 }
 
 func NewServer(port string, storage storage.Storage, middleware middleware.Middleware) *Server {
+
+	serviceManager := transport.NewServiceManager()
 	return &Server{
-		Port:       port,
-		Storage:    storage,
-		Middleware: middleware,
+		Port:           port,
+		ServiceManager: serviceManager,
+		Storage:        storage,
+		Middleware:     middleware,
 	}
 }
 
@@ -58,33 +61,37 @@ func (s *Server) establishConnection(w http.ResponseWriter, r *http.Request) {
 func (s *Server) websocketConnection(conn *websocket.Conn) {
 	defer conn.Close()
 
-	id := 0
-	rpcHandler := transport.NewRPCHandler(s.Storage)
-
 	for {
-		var request types.RpcRequest
-		if err := conn.ReadJSON(&request); err != nil {
-			log.Println("error reading JSON-RPC request:", err)
-			return
-		}
+		var data []byte
 
-		argsValue := make([]reflect.Value, len(request.Args))
-		for i, arg := range request.Args {
-
-			argsValue[i] = reflect.ValueOf(arg)
-		}
-
-		result := reflect.ValueOf(rpcHandler).MethodByName(request.Method).Call(argsValue)
-
-		response := result[0].Interface()
-		log.Println(response)
-
-		err := conn.WriteJSON(response)
+		_, data, err := conn.ReadMessage()
 		if err != nil {
-			log.Println("error writing JSON-RPC response:", err)
+			log.Println("error reading PROTO-RPC request:", err)
 			return
 		}
 
-		id++
+		message := &types.Request{}
+
+		if err := proto.Unmarshal(data, message); err != nil {
+			log.Println("error unmarshaling request structure:", err)
+			return
+
+		}
+
+		result, err := s.ServiceManager.Invoke(message.Method, message.Args)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		log.Println(result)
+
+		response, err := proto.Marshal(result)
+
+		err = conn.WriteMessage(2, response)
+		if err != nil {
+			log.Println("error writing PROTO-RPC response:", err)
+			return
+		}
+
 	}
 }

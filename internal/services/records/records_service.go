@@ -1,10 +1,19 @@
-package services
+package records
 
 import (
 	"log"
 	"rpc/internal/database"
-	"rpc/internal/transport/proto_types"
+	"rpc/internal/models"
+	"rpc/internal/services/records/types"
 )
+
+//go:generate generator
+
+//generator:gen
+type records interface {
+	SetNewRecord(*types.Record) error
+	GetBestN(*types.BestLevelCount) (*models.Level, error)
+}
 
 type RecordsService struct {
 	Storage storage.Storage
@@ -21,33 +30,24 @@ func (h *RecordsService) Welcome(str string) {
 	log.Println("Hello", str)
 }
 
-func (h *RecordsService) SetNewRecord(level float64, username string, score float64) *proto_types.RpcResponse {
-	err := h.Storage.SetNewRecord(int(level), username, int(score))
+func (h *RecordsService) SetNewRecord(record *types.Record) error {
+	err := h.Storage.SetNewRecord(record.Level, record.Username, record.Score)
 	if err != nil {
-		return &proto_types.RpcResponse{
-			Result: nil,
-			Error:  err.Error(),
-		}
+		return err
 	}
-
-	return &proto_types.RpcResponse{
-		Result: nil,
-		Error:  "ok",
-	}
+	return nil
 }
 
-func (h *RecordsService) GetBestN(count float64, level float64) *proto_types.RpcResponse {
-	users, err := h.Storage.GetBestN(int(count), int(level))
+func (h *RecordsService) GetBestN(data *types.BestLevelCount) (*models.Level, error) {
+	users, err := h.Storage.GetBestN(int(data.Count), int(data.Level))
 	if err != nil {
-		return &proto_types.RpcResponse{
-			Result: nil,
-			Error:  err.Error(),
-		}
+		return nil, err
 	}
 
-	return &proto_types.RpcResponse{
-		Result: users,
-		Error:  "",
+	message := &models.Level{
+		Level:  data.Count,
+		Scores: users,
 	}
 
+	return message, nil
 }
