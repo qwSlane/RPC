@@ -21,7 +21,7 @@ func main() {
 	server := app.NewServer(":8080", dao, mw)
 	rs := records.NewRecordsService(dao)
 
-	records.RegisterRecordsService(*server, rs)
+	records.RegisterrecordsService(*server, rs)
 
 	err = server.Start()
 	if err != nil {

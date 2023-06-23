@@ -1,7 +1,6 @@
 package records
 
 import (
-	"log"
 	"rpc/internal/database"
 	"rpc/internal/models"
 	"rpc/internal/services/records/types"
@@ -24,10 +23,6 @@ func NewRecordsService(storage storage.Storage) *RecordsService {
 	return &RecordsService{
 		Storage: storage,
 	}
-}
-
-func (h *RecordsService) Welcome(str string) {
-	log.Println("Hello", str)
 }
 
 func (h *RecordsService) SetNewRecord(record *types.Record) error {

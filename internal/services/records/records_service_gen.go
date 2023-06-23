@@ -14,12 +14,12 @@ func RegisterrecordsService (s app.Server, srv records){
 }
 func _SetNewRecord_Handler(src interface{}, args *anypb.Any) (*anypb.Any, error){
 
-	params := new(*types.Record)
-	err := args.UnmarshalTo(*params)
+	params := new(types.Record)
+	err := args.UnmarshalTo(params)
 	if err != nil{
 		return nil, err
 	}
-	err = src.(records).SetNewRecord(*params)
+	err = src.(records).SetNewRecord(params)
     if err != nil {
         return nil, err
     }
@@ -28,12 +28,12 @@ func _SetNewRecord_Handler(src interface{}, args *anypb.Any) (*anypb.Any, error)
 }
 func _GetBestN_Handler(src interface{}, args *anypb.Any) (*anypb.Any, error){
 
-	params := new(*types.BestLevelCount)
-	err := args.UnmarshalTo(*params)
+	params := new(types.BestLevelCount)
+	err := args.UnmarshalTo(params)
 	if err != nil{
 		return nil, err
 	}
-	result, err := src.(records).GetBestN(*params)
+	result, err := src.(records).GetBestN(params)
 	if err != nil {
 		return nil, err
 	}

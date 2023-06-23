@@ -100,11 +100,12 @@ func (m *MongoDAO) GetBestN(count int, level int) ([]*models.UserScore, error) {
 			return nil, err
 		}
 
-		var userScore *models.UserScore
+		var userScore = new(models.UserScore)
 		scoreMap := document["Scores"].(primitive.M)
 
-		userScore.Username = scoreMap["username"].(string)
 		userScore.Score = scoreMap["score"].(int32)
+
+		userScore.Username = scoreMap["username"].(string)
 
 		results = append(results, userScore)
 	}

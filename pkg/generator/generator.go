@@ -6,9 +6,11 @@ import (
 	"go/ast"
 	"go/printer"
 	"go/token"
-	"html/template"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 	"log"
 	"os"
+	"rpc/pkg/generator/templates"
 	"strings"
 )
 
@@ -53,14 +55,20 @@ func (g ServiceGenerator) Generate(md *ast.File, prevId int32) {
 		Methods:     methods,
 	}
 
+	GenerateServer(params, g.TypeSpec.Name.Name)
+	GenerateClient(params, g.TypeSpec.Name.Name)
+
+}
+
+func GenerateServer(params *ServiceData, name string) {
 	buf := new(bytes.Buffer)
 
-	err := tmpl.Execute(buf, params)
+	err := templates.Serv.Execute(buf, params)
 	if err != nil {
 		panic(err)
 	}
 
-	filename := strings.ToLower(g.TypeSpec.Name.Name) + "_service_gen.go"
+	filename := strings.ToLower(name) + "_service_gen.go"
 
 	file, err := os.Create(filename)
 	if err != nil {
@@ -73,68 +81,30 @@ func (g ServiceGenerator) Generate(md *ast.File, prevId int32) {
 		panic(err)
 	}
 
-	fmt.Println("File created successfully!")
+	fmt.Println("Server file created successfully!")
 }
 
-var tmpl = template.Must(template.New("").Parse(`package {{ .Package }}
-// Generated code.
-// DO NOT EDIT.
+func GenerateClient(params *ServiceData, name string) {
+	buf := new(bytes.Buffer)
 
-import(
-	"google.golang.org/protobuf/types/known/anypb"
-	"rpc/internal/app"
-	"rpc/internal/services/{{ .ServiceName }}/types"
-	"rpc/internal/transport"
-)
-
-func Register{{ .ServiceName }}Service (s app.Server, srv {{ .ServiceName}}){
-	s.ServiceManager.RegisterService(&{{ .ServiceName}}_ServiceDesc, srv)
-}
-
-{{- range .Methods }}
-func _{{ .Name }}_Handler(src interface{}, args *anypb.Any) (*anypb.Any, error){
-
-	params := new({{ .Params }})
-	err := args.UnmarshalTo(*params)
-	if err != nil{
-		return nil, err
-	}
-
-
-	{{- if .ResultType }}
-	result, err := src.({{ $.ServiceName }}).{{ .Name }}(*params)
+	err := templates.Client.Execute(buf, params)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
-	anyResult, err := anypb.New(result)
+	t := cases.Title(language.English)
+	filename := t.String(name) + "Client.gen.cs"
+
+	file, err := os.Create(filename)
 	if err != nil {
-		return nil, err
+		panic(err)
+	}
+	defer file.Close()
+
+	_, err = buf.WriteTo(file)
+	if err != nil {
+		panic(err)
 	}
 
-	return anyResult, nil
-	{{- else }}
-	err = src.({{ $.ServiceName }}).{{ .Name }}(*params)
-    if err != nil {
-        return nil, err
-    }
-
-	return nil, nil
-	{{- end }}
+	fmt.Println("Client file created successfully!")
 }
-{{- end }}
-
-var {{ .ServiceName }}_ServiceDesc = transport.ServiceDescription{
-	ServiceName: "{{ .ServiceName }}",
-	HandlerType: (*{{ .ServiceName }})(nil),
-	Methods: []transport.MethodDescription{
-		{{- range .Methods }}
-		{
-			MethodId: {{ .ID }},
-			Handler:  nil,
-			Method:   _{{ .Name }}_Handler,
-		},
-		{{- end }}
-	},
-}
-	`))
