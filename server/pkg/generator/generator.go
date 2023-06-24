@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"go/ast"
@@ -11,8 +12,11 @@ import (
 	"log"
 	"os"
 	"rpc/pkg/generator/templates"
+	"strconv"
 	"strings"
 )
+
+const FILENAME = "../../../pkg/generator/data.dat"
 
 type ServiceGenerator struct {
 	TypeSpec      *ast.TypeSpec
@@ -28,9 +32,11 @@ func expr2string(expr ast.Expr) string {
 	return buf.String()
 }
 
-func (g ServiceGenerator) Generate(md *ast.File, prevId int32) {
+func (g ServiceGenerator) Generate(md *ast.File) {
 
 	var methods []MethodData
+
+	prevId := GetLastIndex()
 
 	for i, method := range g.InterfaceType.Methods.List {
 
@@ -49,6 +55,8 @@ func (g ServiceGenerator) Generate(md *ast.File, prevId int32) {
 		})
 	}
 
+	UpdateIndex(prevId + int32(len(g.InterfaceType.Methods.List)))
+
 	params := &ServiceData{
 		Package:     md.Name.Name,
 		ServiceName: g.TypeSpec.Name.Name,
@@ -57,6 +65,42 @@ func (g ServiceGenerator) Generate(md *ast.File, prevId int32) {
 
 	GenerateServer(params, g.TypeSpec.Name.Name)
 	GenerateClient(params, g.TypeSpec.Name.Name)
+
+}
+
+func UpdateIndex(i int32) {
+
+	data := []byte(fmt.Sprintf("%d", i))
+	err := os.WriteFile(FILENAME, data, 0666)
+	if err != nil {
+		fmt.Println("Error writing int in file:", err)
+	}
+}
+
+func GetLastIndex() int32 {
+
+	var prev int
+	file, err := os.Open(FILENAME)
+	if err == nil {
+		scanner := bufio.NewScanner(file)
+		if scanner.Scan() {
+			prev, err = strconv.Atoi(scanner.Text())
+		}
+
+		if err != nil {
+			log.Fatal("Error reading int from file")
+		}
+		file.Close()
+
+		return int32(prev)
+	} else {
+		file, err = os.Create(FILENAME)
+		if err != nil {
+			log.Fatal("Error creating file")
+		}
+		defer file.Close()
+		return 0
+	}
 
 }
 

@@ -70,6 +70,6 @@ func main() {
 	}
 
 	for _, task := range genTasks {
-		task.Generate(astOutFile, int32(0))
+		task.Generate(astOutFile)
 	}
 }
