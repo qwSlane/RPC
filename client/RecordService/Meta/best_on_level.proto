@@ -1,0 +1,10 @@
+﻿syntax = "proto3";
+
+package types;
+
+option go_package = "/types";
+
+message BestLevelCount{
+  int32 Count = 1;
+  int32 Level = 2;
+}

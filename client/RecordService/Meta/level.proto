@@ -1,0 +1,12 @@
+﻿syntax = "proto3";
+
+package types;
+
+option go_package = "../models";
+
+import "user_score.proto";
+
+message Level{
+  int32 level = 1;
+  repeated UserScore Scores = 2;
+}

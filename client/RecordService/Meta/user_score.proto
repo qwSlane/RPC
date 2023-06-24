@@ -1,0 +1,10 @@
+﻿syntax = "proto3";
+
+package types;
+
+option go_package = "../models";
+
+message UserScore{
+  string Username = 1;
+  int32 Score = 2;
+}
